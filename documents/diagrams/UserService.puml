@@ -44,4 +44,6 @@ Rel(auth_service, user_repository, "findByEmail(), save()", "Method Call")
 ' 4. Fluxo de Dados (Repository -> Banco)
 Rel(user_repository, user_db, "Leitura e Escrita", "SQL/Driver TCP")
 
+SHOW_FLOATING_LEGEND()
+
 @enduml
