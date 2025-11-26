@@ -1,0 +1,48 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Diagrama de Componentes (Nível 3) - Ticket Service
+
+' Container Pai
+Container_Boundary(ticket_boundary, "Ticket Service (Node/TS)") {
+
+    Component(ticket_controller, "Ticket Controller", "Express/NestJS Controller", "Recebe requisições REST de validação (Staff) e criação interna.")
+
+    Component(ticket_usecase, "Ticket Manager", "Service/Domain Class", "Regras de negócio: Valida unicidade, expiração e status (usado/não usado).")
+
+    Component(qr_provider, "QR Code Provider", "Node Lib (ex: qrcode)", "Gera a string/imagem do QR Code.")
+
+    Component(email_adapter, "Email Adapter", "Nodemailer / HTTP Client", "Abstração para envio de e-mail.")
+
+    Component(session_client, "Session Client", "HTTP Client / Message Producer", "Notifica o serviço de sessão sobre mudanças de estado.")
+
+    Component(ticket_repo, "Ticket Repository", "TypeORM / Prisma", "Camada de acesso a dados dos ingressos.")
+}
+
+' Dependências Externas (Baseadas no seu Nível 2)
+Container(app_staff, "App do Colaborador", "React Native", "Valida entrada")
+Container(catalogo_service, "Catálogo Service", "Node/TS", "Solicita criação do ticket")
+Container(sessao_service, "Sessão Service", "Node/TS", "Recebe atualização de status")
+System_Ext(notificacao_gateway, "Gateway de Notificação", "SMTP/API")
+
+ContainerDb(db_ticket, "Ticket DB", "PostgreSQL/Mongo", "Armazena Hash do QR e Status")
+
+' Relacionamentos
+
+' Entradas
+Rel(app_staff, ticket_controller, "POST /validate-qr", "HTTPS")
+Rel(catalogo_service, ticket_controller, "POST /issue-ticket", "HTTPS")
+
+' Fluxo Interno
+Rel(ticket_controller, ticket_usecase, "Invoca métodos", "Call")
+Rel(ticket_usecase, qr_provider, "Gera Hash/Img", "Call")
+Rel(ticket_usecase, ticket_repo, "Persiste ticket", "Async/Await")
+Rel(ticket_usecase, email_adapter, "Solicita envio", "Call")
+Rel(ticket_usecase, session_client, "Notifica confirmação", "Call")
+
+' Saídas Externas
+Rel(ticket_repo, db_ticket, "SQL/NoSQL", "TCP")
+Rel(email_adapter, notificacao_gateway, "Envia e-mail", "API")
+Rel(session_client, sessao_service, "Evento: TicketConfirmed", "Async (RabbitMQ/Kafka ou HTTP)")
+
+@enduml
