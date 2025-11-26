@@ -1,0 +1,38 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Diagrama de Componentes (Nível 3) - Sessão Service
+
+' Container Pai
+Container_Boundary(sessao_boundary, "Sessão Service (Node/TS)") {
+
+    Component(seat_controller, "Seat Event Consumer / Controller", "Message Consumer / REST", "Recebe comandos de bloqueio e confirmação de assentos.")
+
+    Component(concurrency_manager, "Concurrency Manager", "Service Logic (Mutex/Lock)", "Garante que dois processos não reservem o mesmo assento simultaneamente.")
+
+    Component(seat_service, "Seat Service", "Domain Logic", "Gerencia o estado: Livre -> Bloqueado Temporário -> Vendido.")
+
+    Component(seat_repo, "Seat Repository", "TypeORM / Prisma", "Acesso ao estado dos assentos.")
+}
+
+' Dependências Externas (Baseadas no seu Nível 2)
+Container(catalogo_service, "Catálogo Service", "Node/TS", "Solicita bloqueio inicial")
+Container(ticket_service, "Ticket Service", "Node/TS", "Confirma venda (Sincronização)")
+
+ContainerDb(db_sessao, "Sessão/Seat DB", "Redis + SQL", "Persistência e Cache de bloqueio")
+
+' Relacionamentos
+
+' Entradas (Baseadas no Nivel 2)
+Rel(catalogo_service, seat_controller, "Evento: LockSeat", "Async")
+Rel(ticket_service, seat_controller, "Evento: ConfirmSeat", "Async")
+
+' Fluxo Interno
+Rel(seat_controller, concurrency_manager, "Solicita Lock", "Call")
+Rel(concurrency_manager, seat_service, "Executa lógica se livre", "Call")
+Rel(seat_service, seat_repo, "Atualiza estado", "Async/Await")
+
+' Persistência
+Rel(seat_repo, db_sessao, "Leitura/Escrita", "TCP")
+
+@enduml
