@@ -1,0 +1,63 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+' Customização visual
+SKINPARAM PACKAGE_STYLE rect
+SHOW_PERSON_OUTLINE()
+
+title Diagrama de Componentes (Nível 3) - Catálogo Service (Nest.js)
+
+' --- ATORES E APPS ---
+Person(cliente, "Cliente", "Usuário navegando")
+Container(app_cliente, "App do Cliente", "Mobile/Web (React)", "Consome API")
+
+' --- SERVIÇOS EXTERNOS ---
+Container(ticket_service, "Ticket Service", "NestJS", "API REST")
+Container(pagamento_service, "Pagamento Service", "NestJS", "Endpoint de Webhook")
+Container(sessao_service, "Sessão Service", "NestJS", "Endpoint de Webhook")
+
+' --- BANCO DE DADOS ---
+ContainerDb(catalogo_db, "Catálogo DB", "MongoDB", "Collections")
+
+' --- MÓDULO NESTJS ---
+Container_Boundary(catalogo_module, "CatalogModule (NestJS)") {
+
+    ' 1. Controller
+    Component(catalog_controller, "CatalogController", "@Controller", "Define rotas, valida DTOs (Pipes) e decora endpoints (Swagger).")
+
+    ' 2. Service (Regra de Negócio)
+    Component(catalog_service_provider, "CatalogService", "@Injectable", "Contém a lógica de negócio, tratamento de exceções e orquestração.")
+
+    ' 3. Camada de Dados (Mongoose)
+    Component(movie_repository, "MovieModel", "@InjectModel (Mongoose)", "Interface do Mongoose injetada para acesso ao MongoDB.")
+
+    ' 4. Camada de Integração (Services Wrappers)
+    ' No NestJS, encapsulamos chamadas HTTP em services injetáveis
+    Component(ticket_integration, "TicketIntegrationService", "@Injectable", "Encapsula a chamada ao Ticket Service.")
+
+    Component(payment_webhook, "PaymentWebhookService", "@Injectable", "Dispara requisição Fire-and-forget para o Webhook de Pagamento.")
+
+    Component(session_webhook, "SessionWebhookService", "@Injectable", "Dispara requisição Fire-and-forget para o Webhook de Sessão.")
+}
+
+' --- RELACIONAMENTOS ---
+
+' Entrada
+Rel(app_cliente, catalog_controller, "Requisição HTTP", "JSON/HTTPS")
+
+' Fluxo Interno (Injeção de Dependência)
+Rel(catalog_controller, catalog_service_provider, "Chama métodos")
+Rel(catalog_service_provider, movie_repository, "Consulta dados")
+Rel(movie_repository, catalogo_db, "Driver Nativo", "TCP")
+
+' Orquestração (Service chama Integrações)
+Rel(catalog_service_provider, ticket_integration, "Chama")
+Rel(catalog_service_provider, payment_webhook, "Chama")
+Rel(catalog_service_provider, session_webhook, "Chama")
+
+' Saída para o mundo externo (com observação do HttpService)
+Rel(ticket_integration, ticket_service, "POST /tickets", "JSON/HTTPS (via HttpService)")
+Rel(payment_webhook, pagamento_service, "POST /webhooks/payment", "JSON/HTTPS (via HttpService)")
+Rel(session_webhook, sessao_service, "POST /webhooks/session", "JSON/HTTPS (via HttpService)")
+
+@enduml
