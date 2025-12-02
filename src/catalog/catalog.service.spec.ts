@@ -1,9 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CatalogService } from './catalog.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { TicketIntegrationService } from '../integration/ticket-integration.service';
-import { SessionIntegrationService } from '../integration/session-integration.service';
-
 describe('CatalogService', () => {
   let service: CatalogService;
   let prismaService: PrismaService;

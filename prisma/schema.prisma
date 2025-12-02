@@ -75,7 +75,7 @@ model Session {
 // --- READ MODEL (CQRS) ---
 model SessionSeat {
   id        String   @id @default(uuid())
-  isBooked  Boolean  @default(false)
+  isAvailable  Boolean  @default(false)
   
   sessionId String
   session   Session  @relation(fields: [sessionId], references: [id])
