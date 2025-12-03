@@ -1,0 +1,49 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+' Customização visual
+SKINPARAM PACKAGE_STYLE rect
+SHOW_PERSON_OUTLINE()
+
+title Diagrama de Componentes (Nível 3) - User Service
+
+' --- CONTAINERS FRONTEIRAS (Mantidos como referência) ---
+Container(app_cliente, "App do Cliente", "Mobile/Web (React)", "Cliente faz Login/Cadastro")
+Container(app_staff, "App do Colaborador", "Mobile (Flutter)", "Colaborador faz Login")
+
+' --- INFRAESTRUTURA DE DADOS ---
+' No nível 3, o banco de dados volta a aparecer, pois os componentes precisam conectar nele
+ContainerDb(user_db, "User Database", "PostgreSQL/MySQL", "Tabelas: Users, Roles, Profiles")
+
+' --- O MICROSSERVIÇO POR DENTRO ---
+Container_Boundary(user_service, "User Service (Node/TS)") {
+
+    Component(auth_controller, "Auth Controller", "Typescript/Express", "Recebe requisições HTTP (REST). Valida DTOs de entrada.")
+
+    Component(auth_service, "Auth Service", "Typescript Class", "Regras de negócio: Verifica senhas, gera Tokens JWT, gerencia Refresh Tokens.")
+
+    Component(security_utils, "Security Utils", "Lib/Module", "Utilitários para Hashing (bcrypt) e validação de tokens.")
+
+    Component(user_repository, "User Repository", "ORM (TypeORM/Prisma)", "Abstração de acesso aos dados. Monta queries SQL.")
+
+}
+
+' --- RELACIONAMENTOS ---
+
+' 1. Fluxo de Entrada (Apps -> Controller)
+Rel(app_cliente, auth_controller, "POST /auth/login, /auth/register", "JSON/HTTPS")
+Rel(app_staff, auth_controller, "POST /auth/login (staff)", "JSON/HTTPS")
+
+' 2. Fluxo Interno (Controller -> Service)
+Rel(auth_controller, auth_service, "Chama métodos de autenticação")
+
+' 3. Fluxo de Lógica (Service usa Utils e Repository)
+Rel(auth_service, security_utils, "Hash senha / Valida Token")
+Rel(auth_service, user_repository, "findByEmail(), save()", "Method Call")
+
+' 4. Fluxo de Dados (Repository -> Banco)
+Rel(user_repository, user_db, "Leitura e Escrita", "SQL/Driver TCP")
+
+SHOW_FLOATING_LEGEND()
+
+@enduml
