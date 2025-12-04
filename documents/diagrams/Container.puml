@@ -1,0 +1,67 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+' Customização visual
+SKINPARAM PACKAGE_STYLE rect
+SHOW_PERSON_OUTLINE()
+
+title Diagrama de Contêineres (Nível 2) - Sistema de Cinema (Node/TS)
+
+' --- ATORES ---
+Person(cliente, "Cliente", "Usuário que navega e compra.")
+Person(colaborador, "Colaborador", "Valida ingressos na entrada.")
+
+' --- SISTEMAS EXTERNOS ---
+System_Ext(pagamento_gateway, "Gateway de Pagamento", "Processa transações.")
+System_Ext(notificacao_gateway, "Gateway de Notificação", "Envia e-mails.")
+
+' --- O SISTEMA (Fronteira) ---
+System_Boundary(sistema_cinema, "Sistema de Cinema") {
+
+    ' --- FRONTENDS (Separados) ---
+    Container(app_cliente, "App do Cliente", "Mobile/Web (React)", "Visualiza catálogo, sessões e compra ingressos")
+    Container(app_staff, "App do Colaborador", "Mobile/Web (React)", "Para validação de QR Code e controle de entrada")
+
+    ' --- BACKEND SERVICES ---
+    Container(user_service, "User Service", "Node/Typescript", "Cadastro/Login de Usuários (Clientes e Staff)")
+
+    Container(catalogo_service, "Catálogo Service", "Node/Typescript", "Gerencia Filmes, Sessões e Assentos")
+
+    Container(ticket_service, "Ticket Service", "Node/Typescript", "Emissão e Validação de Ingressos")
+
+    Container(sessao_service, "Sessão Service", "Node/Typescript", "Gerenciamento de estado da compra")
+
+    Container(pagamento_service, "Pagamento Service", "Node/Typescript", "Integração financeira")
+}
+
+' --- RELACIONAMENTOS ---
+
+' 1. Interação dos Atores com seus respectivos Apps
+Rel(cliente, app_cliente, "Usa para comprar", "HTTPS")
+Rel(colaborador, app_staff, "Usa para validar", "HTTPS")
+
+' 2. App do CLIENTE chamando Backend
+Rel_Back_Neighbor(user_service,app_cliente, "Login/Cadastro", "JSON/HTTPS")
+Rel(app_cliente, catalogo_service, "Busca filmes/sessões", "JSON/HTTPS")
+Rel(app_cliente, ticket_service, "Visualiza meus tickets", "JSON/HTTPS")
+
+' 3. App do COLABORADOR chamando Backend
+' O colaborador precisa logar e validar tickets. Geralmente não precisa ver o catálogo de compras.
+Rel_Neighbor(app_staff,user_service, "Login (Staff)", "JSON/HTTPS")
+Rel(app_staff, ticket_service, "Valida QR Code", "JSON/HTTPS")
+
+' 4. Comunicação entre Microsserviços (Backend-to-Backend)
+Rel(catalogo_service, ticket_service, "Solicita geração de Ticket", "JSON/HTTPS")
+Rel(catalogo_service, sessao_service, "Solicita assento", "Async")
+Rel_Neighbor(ticket_service, sessao_service, "Atualiza status", "Async")
+
+' Fluxo de Pagamento
+Rel(catalogo_service, pagamento_service, "Inicia pagamento", "async")
+Rel(pagamento_service, pagamento_gateway, "Processa transação", "API HTTPS")
+
+' Fluxo de Notificação
+Rel(ticket_service, notificacao_gateway, "Envia e-mail", "SMTP/API")
+
+SHOW_FLOATING_LEGEND()
+
+@enduml

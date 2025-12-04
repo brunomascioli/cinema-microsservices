@@ -1,0 +1,36 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+' Customização visual básica
+SKINPARAM PACKAGE_STYLE rect
+
+SHOW_PERSON_OUTLINE()
+
+title Diagrama de Contexto - Sistema de Venda de Ingressos
+
+' 1. Atores (Pessoas)
+Person(cliente, "Cliente", "Usuário que navega no catálogo e compra ingressos.")
+
+' 1. Atores (Pessoas)
+Person(colaborador, "Colaborador", "Utiliza camera do app para escanear QRcodes dos ingressos")
+
+' 2. O Sistema Principal (O foco do diagrama)
+' Aqui nós agrupamos: Interface, Catálogo, Ticket, Sessão e User
+System(sistema_cinema, "Sistema de Cinema", "Permite cadastro, login, visualização de sessões, seleção de assentos e emissão de ingressos.")
+
+' 3. Sistemas Externos
+' O módulo de pagamento geralmente é externo (Gateway) neste nível de abstração
+System_Ext(pagamento, "Gateway de Pagamento", "Processa as transações financeiras.")
+
+System_Ext(notificação, "Gateway de Notificação", "Gera e envia notificações via e-mail")
+
+
+' 4. Relacionamentos
+Rel(cliente, sistema_cinema, "Visualiza sessões e compra ingressos", "HTTPS")
+Rel(colaborador, sistema_cinema, "Valida ingressos dos clientes na porta da sessão", "HTTPS")
+Rel_Back_Neighbor(pagamento,sistema_cinema, "Envia dados para processar pagamento", "API")
+Rel_Neighbor(sistema_cinema,notificação, "Envia informações do status da compra de ingressos","API")
+
+SHOW_FLOATING_LEGEND()
+
+@enduml
