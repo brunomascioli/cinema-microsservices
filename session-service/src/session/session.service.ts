@@ -1,64 +1,81 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  ConflictException,
+  InternalServerErrorException
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { v4 as uuidv4 } from 'uuid'; // Instale: npm install uuid @types/uuid
+import { PrismaService } from '../prisma/prisma.service';
+import { ReserveSeatDto } from './dto/reserve-seat.dto';
 
 @Injectable()
 export class SessionService {
   private readonly logger = new Logger(SessionService.name);
 
   constructor(
-    @Inject('CATALOG_BUS') private catalogClient: ClientProxy,
-    @Inject('TICKET_BUS') private ticketClient: ClientProxy,
+    // Injetamos o RabbitMQ (Event Bus)
+    @Inject('EVENT_BUS') private client: ClientProxy,
+    // Injetamos o Banco de Dados
+    private prisma: PrismaService,
   ) { }
 
-  async processPurchase(sessionId: string, seatId: string, userId: string) {
+  async reserveSeat(dto: ReserveSeatDto) {
+    const { sessionId, seatId, userId } = dto;
+    this.logger.log(`🔒 [Processing] Tentando reservar assento ${seatId} para a sessão ${sessionId}...`);
 
-    // --- 1. RESERVA (Local Session DB) ---
-    // Verifica disponibilidade e "Locka" o assento
-    // const reservation = await this.sessionRepo.create(...)
-    this.logger.log(`1. [RESERVE] Assento ${seatId} bloqueado temporariamente (10 min).`);
+    try {
+      // --- 1. PERSISTÊNCIA (Atomic Database Lock) ---
+      // Tenta criar o registro. Graças ao @@unique([sessionId, seatId]) no Schema,
+      // o banco rejeitará fisicamente qualquer tentativa de duplicidade.
+      const reservation = await this.prisma.prisma.seatReservation.create({
+        data: {
+          sessionId,
+          seatId,
+          userId,
+          status: 'LOCKED', // Começa como travado
+          // Define expiração para daqui a 15 minutos (Regra de Negócio)
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+        },
+      });
 
-    // --- 2. SINCRONIZA CATÁLOGO (Evento) ---
-    this.catalogClient.emit('seat.reserved', { sessionId, seatId });
-    this.logger.log(`2. [SYNC] Enviado aviso ao Catálogo.`);
+      this.logger.log(`✅ [Database] Assento travado com sucesso! ID Reserva: ${reservation.id}`);
 
-    // --- 3. PAGAMENTO (Simulação) ---
-    // Aqui tu chamarias o PaymentService futuramente.
-    const paymentSuccess = await this.mockPaymentProcessing();
+      // --- 2. EVENT SOURCING (Sincronização) ---
+      // Se chegamos aqui, o lugar é nosso. Agora avisamos o Catálogo.
+      const eventPayload = {
+        sessionId,
+        seatId,
+        status: 'OCCUPIED', // O Catálogo entende LOCKED como Ocupado
+        timestamp: new Date(),
+        reservationId: reservation.id
+      };
 
-    if (!paymentSuccess) {
-      // Se falhar, terias de emitir evento de compensação para liberar o assento
-      throw new Error("Pagamento falhou");
+      // Importante: O nome 'session.seat.reserved' deve ser igual ao @EventPattern do CatalogService
+      this.client.emit('session.seat.reserved', eventPayload);
+
+      this.logger.log(`📡 [EventBus] Evento 'session.seat.reserved' disparado.`);
+
+      return {
+        success: true,
+        message: 'Assento reservado temporariamente. Realize o pagamento.',
+        data: {
+          reservationId: reservation.id,
+          expiresAt: reservation.expiresAt
+        }
+      };
+
+    } catch (error) {
+      // --- 3. TRATAMENTO DE ERROS ---
+
+      // P2002 é o código oficial do Prisma para "Unique constraint failed"
+      if (error.code === 'P2002') {
+        this.logger.warn(`❌ [Conflict] O assento ${seatId} JÁ foi reservado por outra pessoa.`);
+        throw new ConflictException('Desculpe, este assento acabou de ser ocupado.');
+      }
+
+      this.logger.error('Erro crítico ao reservar:', error);
+      throw new InternalServerErrorException('Erro ao processar sua reserva.');
     }
-    this.logger.log(`3. [PAYMENT] Pagamento confirmado (Simulado).`);
-
-    // --- 4. GERAÇÃO DO TICKET ---
-    const ticketData = {
-      id: uuidv4(),
-      sessionId,
-      seatId,
-      userId,
-      qrCode: `QR_${sessionId}_${seatId}`, // Simulação
-      status: 'VALID',
-      createdAt: new Date()
-    };
-
-    // --- 5. PERSISTÊNCIA DO TICKET (Evento para TicketService) ---
-    // O SessionService não grava na tabela de tickets diretamente. Ele pede ao TicketService.
-    this.ticketClient.emit('ticket.issue', ticketData);
-    this.logger.log(`4. [TICKET] Solicitação de persistência enviada para TicketService.`);
-
-    // --- 6. RETORNO AO FRONTEND ---
-    // Retorna os dados do ingresso imediatamente
-    return {
-      success: true,
-      message: "Compra realizada com sucesso!",
-      ticket: ticketData
-    };
-  }
-
-  // Simula um delay de processamento de pagamento
-  private async mockPaymentProcessing(): Promise<boolean> {
-    return new Promise(resolve => setTimeout(() => resolve(true), 1000));
   }
 }

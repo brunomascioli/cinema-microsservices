@@ -14,41 +14,41 @@ datasource db {
 // --- CATALOG DOMAIN ---
 
 model Movie {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   description String
   durationMin Int
   genre       String
   releaseDate DateTime
   posterUrl   String?
-  
-  sessions    Session[]
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  sessions Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("movies")
 }
 
 model Room {
-  id        String @id @default(uuid())
-  name      String
-  capacity  Int
-  
-  seats     Seat[]
-  sessions  Session[]
+  id       String @id @default(uuid())
+  name     String
+  capacity Int
+
+  seats    Seat[]
+  sessions Session[]
 
   @@map("rooms")
 }
 
 model Seat {
-  id        String @id @default(uuid())
-  row       String
-  number    Int
-  
-  roomId    String
-  room      Room   @relation(fields: [roomId], references: [id])
-  
+  id     String @id @default(uuid())
+  row    String
+  number Int
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id])
+
   sessionSeats SessionSeat[]
 
   @@map("seats")
@@ -57,12 +57,12 @@ model Seat {
 model Session {
   id        String   @id @default(uuid())
   startTime DateTime
-  
-  movieId   String
-  movie     Movie    @relation(fields: [movieId], references: [id])
-  
-  roomId    String
-  room      Room     @relation(fields: [roomId], references: [id])
+
+  movieId String
+  movie   Movie  @relation(fields: [movieId], references: [id])
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id])
 
   seatsStatus SessionSeat[]
 
@@ -74,14 +74,14 @@ model Session {
 
 // --- READ MODEL (CQRS) ---
 model SessionSeat {
-  id        String   @id @default(uuid())
-  isAvailable  Boolean  @default(false)
-  
+  id          String  @id @default(uuid())
+  isAvailable Boolean @default(false)
+
   sessionId String
-  session   Session  @relation(fields: [sessionId], references: [id])
-  
-  seatId    String
-  seat      Seat     @relation(fields: [seatId], references: [id])
+  session   Session @relation(fields: [sessionId], references: [id])
+
+  seatId String
+  seat   Seat   @relation(fields: [seatId], references: [id])
 
   updatedAt DateTime @updatedAt
 

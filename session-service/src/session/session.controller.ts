@@ -1,16 +1,13 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { SessionService } from './session.service';
+import { ReserveSeatDto } from './dto/reserve-seat.dto';
 
 @Controller('sessions')
 export class SessionController {
   constructor(private readonly sessionService: SessionService) { }
 
-  @Post('buy')
-  async buyTicket(@Body() body: any) {
-    return this.sessionService.processPurchase(
-      body.sessionId,
-      body.seatId,
-      body.userId
-    );
+  @Post('reserve')
+  async reserve(@Body() reserveSeatDto: ReserveSeatDto) {
+    return this.sessionService.reserveSeat(reserveSeatDto);
   }
 }
