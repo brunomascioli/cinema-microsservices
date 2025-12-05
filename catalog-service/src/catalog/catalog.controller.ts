@@ -24,4 +24,9 @@ export class CatalogController {
   async getSessionDetails(@Param('id') sessionId: string) {
     return this.catalogService.getSessionDetails(sessionId);
   }
+
+  @Get('movies/:id')
+  async getMovieById(@Param('id') id: string) {
+    return this.catalogService.getMovieById(id);
+  }
 }

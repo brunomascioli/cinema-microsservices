@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -43,5 +43,17 @@ export class CatalogService {
       }
     });
     console.log(`[SYNC] Catalog updated: Seat ${seatId} is now ${isAvailable ? 'Available' : 'Occupied'}`);
+  }
+
+  async getMovieById(id: string) {
+    const movie = await this.prismaService.prisma.movie.findUnique({
+      where: { id },
+    });
+
+    if (!movie) {
+      throw new NotFoundException(`Filme com ID ${id} não encontrado.`);
+    }
+
+    return movie;
   }
 }

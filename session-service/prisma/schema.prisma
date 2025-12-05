@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model SeatReservation {
+  // ID interno da reserva (UUID)
+  id String @id @default(uuid())
+
+  // Dados principais
+  sessionId String
+  seatId    String
+  userId    String
+
+  // Status: LOCKED (Travado temporariamente), SOLD (Pago), CANCELED (Expirou)
+  status String @default("LOCKED")
+
+  // Controle de tempo (TTL)
+  createdAt DateTime @default(now())
+  expiresAt DateTime // Vamos usar isso depois para limpar reservas antigas
+
+  // --- A REGRA DE OURO (Constraint) ---
+  // Isto impede fisicamente que o banco aceite duplicatas.
+  // Se tentarem inserir {sessao1, A1} duas vezes, o banco explode um erro.
+  @@unique([sessionId, seatId])
+}
