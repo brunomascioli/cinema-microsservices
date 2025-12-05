@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Movie, Session } from '../types';
+import { Movie, Session, SessionDetails } from '../types';
 
 // Se o backend estiver rodando, ele provavelmente está na porta 3000
 const API_URL = 'http://localhost:3000';
@@ -61,5 +61,15 @@ export const getMovieById = async (id: string): Promise<Movie & { sessions: Sess
   } catch (error) {
     console.warn("Erro ao buscar detalhes do filme. Retornando erro para a tela tratar.");
     throw error; // Lança o erro para a página mostrar a mensagem correta
+  }
+};
+
+export const getSessionById = async (sessionId: string): Promise<SessionDetails> => {
+  try {
+    const response = await api.get<SessionDetails>(`/catalog/sessions/${sessionId}`);
+    return response.data;
+  } catch (error) {
+    console.warn("Erro ao buscar sessão.");
+    throw error;
   }
 };

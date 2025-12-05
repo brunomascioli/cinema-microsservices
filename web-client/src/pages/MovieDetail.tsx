@@ -117,7 +117,9 @@ export function MovieDetail() {
                       <div style={{ fontSize: '0.9rem', color: '#888', marginBottom: '5px' }}>
                         {sessionDate.toLocaleDateString()}
                       </div>
-                      <button style={{ 
+                      <button 
+                      onClick={() => navigate(`/session/${session.id}`)}
+                      style={{ 
                         padding: '8px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', 
                         borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' 
                       }}>

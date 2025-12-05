@@ -23,3 +23,17 @@ export interface Session {
   roomId: string;
   room?: Room; // Pode vir populado ou não
 }
+
+export interface Seat {
+  id: string;
+  row: string;
+  number: number;
+  roomId: string;
+}
+
+// Uma extensão da Sessão que inclui a Sala e os Assentos
+export interface SessionDetails extends Session {
+  room: Room & {
+    seats: Seat[];
+  };
+}
