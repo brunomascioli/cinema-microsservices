@@ -1,5 +1,5 @@
 {
-  "name": "session-service",
+  "name": "ticket-service",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -27,8 +27,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "amqplib": "^0.10.9",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1",
-    "uuid": "^13.0.0"
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

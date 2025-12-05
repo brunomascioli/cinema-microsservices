@@ -1,43 +1,64 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { v4 as uuidv4 } from 'uuid'; // Instale: npm install uuid @types/uuid
 
 @Injectable()
 export class SessionService {
   private readonly logger = new Logger(SessionService.name);
 
   constructor(
-    @Inject('EVENT_BUS') private client: ClientProxy, // Injeta a conexão configurada no Module
+    @Inject('CATALOG_BUS') private catalogClient: ClientProxy,
+    @Inject('TICKET_BUS') private ticketClient: ClientProxy,
   ) { }
 
-  async reserveSeat(sessionId: string, seatId: string, userId: string) {
+  async processPurchase(sessionId: string, seatId: string, userId: string) {
 
-    // --- ETAPA 1: WRITE (O comando) ---
-    // Aqui entra o teu código de banco de dados (Prisma/TypeORM)
-    // Valida se o assento já não está ocupado na tabela 'Session'
-    // Ex: const session = await prisma.session.update(...)
+    // --- 1. RESERVA (Local Session DB) ---
+    // Verifica disponibilidade e "Locka" o assento
+    // const reservation = await this.sessionRepo.create(...)
+    this.logger.log(`1. [RESERVE] Assento ${seatId} bloqueado temporariamente (10 min).`);
 
-    // Simulando a gravação no banco:
-    this.logger.log(`[WRITE] Assento ${seatId} gravado como OCUPADO no banco Session DB.`);
+    // --- 2. SINCRONIZA CATÁLOGO (Evento) ---
+    this.catalogClient.emit('seat.reserved', { sessionId, seatId });
+    this.logger.log(`2. [SYNC] Enviado aviso ao Catálogo.`);
 
-    // --- ETAPA 2: EVENT (A sincronização) ---
-    // Prepara o pacote de dados para enviar
-    const eventPayload = {
+    // --- 3. PAGAMENTO (Simulação) ---
+    // Aqui tu chamarias o PaymentService futuramente.
+    const paymentSuccess = await this.mockPaymentProcessing();
+
+    if (!paymentSuccess) {
+      // Se falhar, terias de emitir evento de compensação para liberar o assento
+      throw new Error("Pagamento falhou");
+    }
+    this.logger.log(`3. [PAYMENT] Pagamento confirmado (Simulado).`);
+
+    // --- 4. GERAÇÃO DO TICKET ---
+    const ticketData = {
+      id: uuidv4(),
       sessionId,
       seatId,
-      status: 'OCCUPIED',
-      timestamp: new Date(),
-      triggeredBy: userId
+      userId,
+      qrCode: `QR_${sessionId}_${seatId}`, // Simulação
+      status: 'VALID',
+      createdAt: new Date()
     };
 
-    // Envia para a fila. 
-    // IMPORTANTE: O texto 'session.seat.reserved' tem de ser IGUAL ao @EventPattern do Catalog
-    this.client.emit('session.seat.reserved', eventPayload);
+    // --- 5. PERSISTÊNCIA DO TICKET (Evento para TicketService) ---
+    // O SessionService não grava na tabela de tickets diretamente. Ele pede ao TicketService.
+    this.ticketClient.emit('ticket.issue', ticketData);
+    this.logger.log(`4. [TICKET] Solicitação de persistência enviada para TicketService.`);
 
-    this.logger.log(`[EVENT] Mensagem enviada para o RabbitMQ: session.seat.reserved`);
-
+    // --- 6. RETORNO AO FRONTEND ---
+    // Retorna os dados do ingresso imediatamente
     return {
       success: true,
-      message: 'Reserva processada com sucesso'
+      message: "Compra realizada com sucesso!",
+      ticket: ticketData
     };
+  }
+
+  // Simula um delay de processamento de pagamento
+  private async mockPaymentProcessing(): Promise<boolean> {
+    return new Promise(resolve => setTimeout(() => resolve(true), 1000));
   }
 }

@@ -3,5 +3,9 @@
 /user-service/.env
 /catalog-service/.env
 /catalog-service/pnpm-lock.yaml
+/session-service/.env
 /session-service/node_modules
 /session-service/pnpm-lock.yaml
+/ticket-service/.env
+/ticket-service/node_modules
+/ticket-service/pnpm-lock.yaml
