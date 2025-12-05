@@ -36,6 +36,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  session-db:
+    image: postgres:15-alpine
+    container_name: session_db_container
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: session_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - session_postgres_data:/var/lib/postgresql/data   
   
   rabbitmq:
     image: rabbitmq:3-management
@@ -54,4 +67,6 @@ volumes:
   user_db_data:
     driver: local
   catalog_db_data:
+    driver: local
+  session_postgres_data:
     driver: local
