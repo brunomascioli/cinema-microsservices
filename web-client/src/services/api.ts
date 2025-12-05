@@ -13,7 +13,8 @@ export const api = axios.create({
 // Tenta buscar do backend, se falhar (erro de rede), retorna dados falsos para você não travar
 export const getMovies = async (): Promise<Movie[]> => {
   try {
-    const response = await api.get<Movie[]>('/movies'); // Rota provável do NestJS
+    // Rota correta com o prefixo /catalog
+    const response = await api.get<Movie[]>('/catalog/movies');
     return response.data;
   } catch (error) {
     console.warn("Backend indisponível ou rota inexistente. Usando MOCK DATA.");
@@ -42,38 +43,23 @@ export const getMovies = async (): Promise<Movie[]> => {
 
 export const getMovieById = async (id: string): Promise<Movie & { sessions: Session[] }> => {
   try {
-    const response = await api.get(`/movies/${id}`);
-    return response.data;
-  } catch (error) {
-    console.warn("Backend indisponível. Usando MOCK DATA para Detalhes.");
+    // 1. Busca os dados do filme
+    const movieReq = api.get<Movie>(`/catalog/movies/${id}`);
     
-    // Simulando dados de sessões para o filme
-    return {
-      id: id,
-      title: id === '1' ? 'O Auto da Compadecida 2' : 'Interestelar',
-      description: 'Descrição completa do filme simulada...',
-      durationMin: 120,
-      genre: 'Simulação',
-      releaseDate: new Date().toISOString(),
-      posterUrl: id === '1' 
-        ? 'https://upload.wikimedia.org/wikipedia/pt/b/bc/O_Auto_da_Compadecida_2_p%C3%B4ster.jpg'
-        : 'https://upload.wikimedia.org/wikipedia/pt/3/3a/Interstellar_Filme.jpg',
-      sessions: [
-        {
-          id: 'sess-1',
-          startTime: new Date(new Date().setHours(14, 0)).toISOString(), // Hoje às 14h
-          movieId: id,
-          roomId: 'room-1',
-          room: { id: 'room-1', name: 'Sala IMAX', capacity: 100 }
-        },
-        {
-          id: 'sess-2',
-          startTime: new Date(new Date().setHours(18, 30)).toISOString(), // Hoje às 18h30
-          movieId: id,
-          roomId: 'room-2',
-          room: { id: 'room-2', name: 'Sala Standard', capacity: 50 }
-        }
-      ]
+    // 2. Busca as sessões desse filme (Rota específica que vimos no log do backend)
+    const sessionsReq = api.get<Session[]>(`/catalog/movies/${id}/sessions`);
+
+    // Aguarda as duas requisições terminarem ao mesmo tempo
+    const [movieRes, sessionsRes] = await Promise.all([movieReq, sessionsReq]);
+
+    // Retorna os dados unidos
+    return { 
+      ...movieRes.data, 
+      sessions: sessionsRes.data || [] // Garante que é um array
     };
+
+  } catch (error) {
+    console.warn("Erro ao buscar detalhes do filme. Retornando erro para a tela tratar.");
+    throw error; // Lança o erro para a página mostrar a mensagem correta
   }
 };
