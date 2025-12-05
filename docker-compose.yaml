@@ -21,7 +21,7 @@ services:
 
   catalog-db:
     image: postgres:15-alpine
-    container_name: catalog_db
+    container_name: catalogdb
     restart: unless-stopped
     environment:
       POSTGRES_USER: admin
@@ -39,7 +39,7 @@ services:
 
   session-db:
     image: postgres:15-alpine
-    container_name: session_db_container
+    container_name: sessiondb
     restart: always
     environment:
       POSTGRES_USER: admin
@@ -50,6 +50,24 @@ services:
     volumes:
       - session_postgres_data:/var/lib/postgresql/data   
   
+  ticket-db:
+    image: postgres:15-alpine
+    container_name: ticketdb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ticketdb
+    ports:
+      - "5436:5432"
+    volumes:
+      - ticket_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d ticketdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -72,11 +90,8 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      # Mapeia a pasta local para dentro do container (HOT RELOAD)
       - ./web-client:/app
-      # Evita que o node_modules do container seja sobrescrito pelo local
       - /app/node_modules
-    # Garante que o front só suba se os bancos estiverem ok (opcional, mas boa prática)
     depends_on:
       - user-db
       - catalog-db
@@ -87,4 +102,6 @@ volumes:
   catalog_db_data:
     driver: local
   session_postgres_data:
+    driver: local
+  ticket_db_data:
     driver: local
