@@ -7,14 +7,21 @@ import { SessionService } from './session.service';
   imports: [
     ClientsModule.register([
       {
-        name: 'EVENT_BUS', // Nome que usaremos para injetar no Service
+        name: 'CATALOG_BUS',
         transport: Transport.RMQ,
         options: {
-          urls: ['amqp://guest:guest@localhost:5672'], // Verifica se é esta a URL do teu Docker
-          queue: 'cinema_sync_queue', // <--- CONFIRMA SE ESTÁ IGUAL AO CATALOG-SERVICE
-          queueOptions: {
-            durable: false,
-          },
+          urls: ['amqp://guest:guest@localhost:5672'],
+          queue: 'cinema_sync_queue', // Fila do Catálogo
+          queueOptions: { durable: false },
+        },
+      },
+      {
+        name: 'TICKET_BUS',
+        transport: Transport.RMQ,
+        options: {
+          urls: ['amqp://guest:guest@localhost:5672'],
+          queue: 'ticket_creation_queue',
+          queueOptions: { durable: false },
         },
       },
     ]),
