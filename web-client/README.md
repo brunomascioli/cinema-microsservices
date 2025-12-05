@@ -1,50 +1,65 @@
-# React + TypeScript + Vite
+# 🎬 Cinema Web Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend do sistema de venda de ingressos para cinema, desenvolvido com arquitetura de microsserviços. Este projeto consome as APIs de **Catálogo** e **Usuários** para prover a experiência de compra ao cliente final.
 
-Currently, two official plugins are available:
+## 🚀 Tecnologias
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React** (Vite)
+- **TypeScript**
+- **Axios** (Integração com APIs REST)
+- **React Router DOM** (Navegação)
+- **Lucide React** (Ícones)
+- **Docker** (Containerização)
 
-## Expanding the ESLint configuration
+## ✨ Funcionalidades
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+### 1. Autenticação
+- **Login:** Integração com o `user-service`.
+- **Gestão de Sessão:** Armazenamento de Token JWT e dados do usuário no LocalStorage.
 
-- Configure the top-level `parserOptions` property like this:
+### 2. Catálogo e Sessões
+- **Home:** Listagem de filmes em cartaz (consome `catalog-service`).
+- **Detalhes do Filme:** Exibição de sinopse, duração, gênero e lista de sessões disponíveis.
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+### 3. Fluxo de Compra
+- **Mapa de Assentos:** Seleção visual interativa de assentos. O layout da sala (quantidade de fileiras e cadeiras) é gerado dinamicamente baseado nos dados do backend.
+- **Seleção de Ingressos:** Escolha entre ingresso **Inteira** ou **Meia-entrada** para cada assento selecionado, com cálculo automático do valor total.
+- **Pagamento:** Interface visual para seleção de método de pagamento (Pix ou Cartão).
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+---
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+## 📦 Pré-requisitos
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+Antes de começar, verifique se você possui instalado:
+
+- **Node.js** (Versão 20 ou superior)
+- **NPM** (Gerenciador de pacotes)
+- **Docker & Docker Compose** (Opcional, para rodar containerizado)
+
+> **Importante:** Para que o Frontend funcione corretamente, os microsserviços de backend (`user-service` e `catalog-service`) e seus respectivos bancos de dados devem estar rodando.
+
+---
+
+## 🛠️ Execução Via Docker
+
+Se preferir rodar toda a stack (Frontend + Backends + Bancos) via Docker, utilize o arquivo docker-compose.yaml na raiz do repositório principal:
+
+1. **Na raiz do projeto (cinema-microsservices):**
+   docker-compose up -d --build
+
+## 🛠️ Instalação e Execução (Local)
+
+Siga os passos abaixo para rodar o projeto em ambiente de desenvolvimento local:
+
+1. **Acesse a pasta do projeto:**
+   ```bash
+   cd web-client
+
+2. **Instale as dependências:**
+   npm install
+
+3. **Execute o projeto:**
+   npm run dev
+
+4. **Execute o projeto:**
+  http://localhost:5173

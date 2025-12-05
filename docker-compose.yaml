@@ -50,6 +50,24 @@ services:
       timeout: 30s
       retries: 3
 
+  web-client:
+    build:
+      context: ./web-client
+      dockerfile: Dockerfile
+    container_name: web_client
+    restart: always
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mapeia a pasta local para dentro do container (HOT RELOAD)
+      - ./web-client:/app
+      # Evita que o node_modules do container seja sobrescrito pelo local
+      - /app/node_modules
+    # Garante que o front só suba se os bancos estiverem ok (opcional, mas boa prática)
+    depends_on:
+      - user-db
+      - catalog-db
+
 volumes:
   user_db_data:
     driver: local
